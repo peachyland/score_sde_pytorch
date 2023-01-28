@@ -21,3 +21,7 @@ dist/
 *.DS_Store
 
 results/
+
+cmd/
+
+logfile/

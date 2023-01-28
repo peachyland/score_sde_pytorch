@@ -267,19 +267,19 @@ def evaluate(config,
     while not tf.io.gfile.exists(ckpt_filename):
       if not waiting_message_printed:
         logging.warning("Waiting for the arrival of checkpoint_%d" % (ckpt,))
-        waiting_message_printed = True
-      time.sleep(60)
+        waiting_message_printed = False
+      time.sleep(1)
 
     # Wait for 2 additional mins in case the file exists but is not ready for reading
     ckpt_path = os.path.join(checkpoint_dir, f'checkpoint_{ckpt}.pth')
     try:
       state = restore_checkpoint(ckpt_path, state, device=config.device)
     except:
-      time.sleep(60)
+      # time.sleep(60)
       try:
         state = restore_checkpoint(ckpt_path, state, device=config.device)
       except:
-        time.sleep(120)
+        # time.sleep(120)
         state = restore_checkpoint(ckpt_path, state, device=config.device)
     ema.copy_to(score_model.parameters())
     # Compute the loss function on the full evaluation dataset if loss computation is enabled
@@ -288,6 +288,8 @@ def evaluate(config,
       eval_iter = iter(eval_ds)  # pytype: disable=wrong-arg-types
       for i, batch in enumerate(eval_iter):
         eval_batch = torch.from_numpy(batch['image']._numpy()).to(config.device).float()
+        # print(eval_batch.shape)
+        # input("check")
         eval_batch = eval_batch.permute(0, 3, 1, 2)
         eval_batch = scaler(eval_batch)
         eval_loss = eval_step(state, eval_batch)

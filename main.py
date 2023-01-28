@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """Training and evaluation"""
+from scipy import integrate
 
 import run_lib
 from absl import app
@@ -23,6 +24,10 @@ import logging
 import os
 import tensorflow as tf
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+  tf.config.experimental.set_memory_growth(gpu, True)
+
 FLAGS = flags.FLAGS
 
 config_flags.DEFINE_config_file(
@@ -31,10 +36,12 @@ flags.DEFINE_string("workdir", None, "Work directory.")
 flags.DEFINE_enum("mode", None, ["train", "eval"], "Running mode: train or eval")
 flags.DEFINE_string("eval_folder", "eval",
                     "The folder name for storing evaluation results")
+flags.DEFINE_string("job_id", "local", "Work directory.")
 flags.mark_flags_as_required(["workdir", "config", "mode"])
 
-
 def main(argv):
+  FLAGS.workdir = "{}/{}".format(FLAGS.workdir, FLAGS.job_id)
+
   if FLAGS.mode == "train":
     # Create the working directory
     tf.io.gfile.makedirs(FLAGS.workdir)

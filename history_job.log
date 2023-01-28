@@ -1,0 +1,10 @@
+Sat 28 Jan 2023 04:17:12 PM EST
+
+GPU_ID=2
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
+Sat 28 Jan 2023 04:17:52 PM EST
+1
+GPU_ID=2
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
