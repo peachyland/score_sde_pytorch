@@ -185,9 +185,16 @@ def get_dataset(config, uniform_dequantization=False, evaluation=False):
         split=split, shuffle_files=True, read_config=read_config)
     else:
       ds = dataset_builder.with_options(dataset_options)
-    ds = ds.repeat(count=num_epochs)
-    ds = ds.shuffle(shuffle_buffer_size)
     ds = ds.map(preprocess_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    if config.data.unlearnable:
+      if config.data.shuffle:
+        ds = ds.shuffle(shuffle_buffer_size)
+      if config.data.idx:
+        idx_dataset = tf.data.Dataset.range(len(ds))
+        ds = tf.data.Dataset.zip((ds, idx_dataset))
+    else:
+      ds = ds.shuffle(shuffle_buffer_size)
+    ds = ds.repeat(count=num_epochs)
     ds = ds.batch(batch_size, drop_remainder=True)
     return ds.prefetch(prefetch_size)
 

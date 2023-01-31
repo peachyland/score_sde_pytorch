@@ -40,9 +40,9 @@ flags.DEFINE_string("job_id", "local", "Work directory.")
 flags.mark_flags_as_required(["workdir", "config", "mode"])
 
 def main(argv):
-  FLAGS.workdir = "{}/{}".format(FLAGS.workdir, FLAGS.job_id)
 
   if FLAGS.mode == "train":
+    FLAGS.workdir = "{}/{}".format(FLAGS.workdir, FLAGS.job_id)
     # Create the working directory
     tf.io.gfile.makedirs(FLAGS.workdir)
     # Set logger so that it outputs to both console and file

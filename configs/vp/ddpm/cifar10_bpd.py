@@ -28,11 +28,11 @@ def get_config():
   training.continuous = False
   training.reduce_mean = True
 
-  training.batch_size = 512
-  training.n_iters = 325001
-  training.snapshot_freq = 1250
-  training.log_freq = 50
-  training.eval_freq = 100
+  training.batch_size = 16
+  # training.n_iters = 325001
+  # training.snapshot_freq = 12500
+  # training.log_freq = 50
+  # training.eval_freq = 100
 
   # sampling
   sampling = config.sampling
@@ -43,7 +43,13 @@ def get_config():
   # data
   data = config.data
   data.centered = True
-  data.unlearnable = False
+  data.unlearnable = True
+  data.shuffle = False
+  data.idx = True
+
+  # evaluate
+  evaluate = config.eval
+  evaluate.batch_size = 128
 
   # model
   model = config.model

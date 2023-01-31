@@ -311,7 +311,17 @@ def evaluate(config,
         bpd_iter = iter(ds_bpd)  # pytype: disable=wrong-arg-types
         for batch_id in range(len(ds_bpd)):
           batch = next(bpd_iter)
-          eval_batch = torch.from_numpy(batch['image']._numpy()).to(config.device).float()
+          # print(batch.keys())
+          # input("check")
+
+          # if batch_id >= 2:
+          #   break
+
+          print(batch_id)
+          print(batch[0]['image'].shape)
+
+          eval_batch = torch.from_numpy(batch[0]['image']._numpy()).to(config.device).float()
+          sample_idx = torch.from_numpy(batch[1]._numpy()).to(config.device)
           eval_batch = eval_batch.permute(0, 3, 1, 2)
           eval_batch = scaler(eval_batch)
           bpd = likelihood_fn(score_model, eval_batch)[0]
@@ -327,6 +337,63 @@ def evaluate(config,
             io_buffer = io.BytesIO()
             np.savez_compressed(io_buffer, bpd)
             fout.write(io_buffer.getvalue())
+
+        # bpds = np.concatenate(bpds, axis=0)
+        bpds = np.array(bpds)
+        # print(bpds)
+        # print(bpds)
+        torch.save(bpds, "/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/results/bpds.pt")
+        # input("save done")
+        sorted_id = np.argsort(bpds)
+        good_sample_id = sorted_id[:256]
+        bad_sample_id = sorted_id[::-1][:256]
+        # print(sorted_id)
+        # print(0 in sorted_id)
+        # print(100 in sorted_id)
+        # input("check")
+
+        good_sample_list = []
+        bad_sample_list = []
+
+        for batch in ds_bpd:
+          # print(batch[1])
+          # input("check")
+
+          # this_sample_dir = os.path.join(sample_dir, "iter_{}".format(step))
+          # tf.io.gfile.makedirs(this_sample_dir)
+          # nrow = int(np.sqrt(sample.shape[0]))
+          # image_grid = make_grid(sample, nrow, padding=2)
+          # batch_sample = np.clip(batch[0]['image']._numpy() * 255, 0, 255).astype(np.uint8)
+          batch_sample = batch[0]['image']._numpy()
+          for i, sample_id in enumerate(batch[1]):
+            if sample_id in good_sample_id:
+              good_sample_list.append(batch_sample[i])
+            elif sample_id in bad_sample_id:
+              bad_sample_list.append(batch_sample[i])
+
+        good_samples = np.stack(good_sample_list, axis=0).transpose(0, 3, 1, 2)
+        bad_samples = np.stack(bad_sample_list, axis=0).transpose(0, 3, 1, 2)
+
+        # good_samples = np.clip(good_samples * 255, 0, 255).astype(np.uint8)
+        # bad_samples = np.clip(bad_samples * 255, 0, 255).astype(np.uint8)
+
+        tf.io.gfile.makedirs(eval_dir)
+        
+        good_sample_dir = os.path.join(eval_dir, f"{config.eval.bpd_dataset}_ckpt_{ckpt}_bpd_good.png")
+        nrow = int(np.sqrt(good_samples.shape[0]))
+        good_samples = torch.tensor(good_samples)
+        image_grid = make_grid(good_samples, nrow, padding=2)
+        # image_grid = np.clip(image_grid.cpu().numpy() * 255, 0, 255).astype(np.uint8)
+        with tf.io.gfile.GFile(good_sample_dir, "wb") as fout:
+          save_image(image_grid, fout)
+
+        bad_sample_dir = os.path.join(eval_dir, f"{config.eval.bpd_dataset}_ckpt_{ckpt}_bpd_bad.png")
+        nrow = int(np.sqrt(bad_samples.shape[0]))
+        bad_samples = torch.tensor(bad_samples)
+        image_grid = make_grid(bad_samples, nrow, padding=2)
+        # image_grid = np.clip(image_grid.cpu().numpy() * 255, 0, 255).astype(np.uint8)
+        with tf.io.gfile.GFile(bad_sample_dir, "wb") as fout:
+          save_image(image_grid, fout)
 
     # Generate samples and compute IS/FID/KID when enabled
     if config.eval.enable_sampling:

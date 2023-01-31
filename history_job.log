@@ -8,3 +8,33 @@ Sat 28 Jan 2023 04:17:52 PM EST
 GPU_ID=2
 python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
 ---------------------------------------------------------------
+Sat 28 Jan 2023 04:33:07 PM EST
+2
+GPU_ID=2
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
+Sat 28 Jan 2023 04:34:04 PM EST
+3
+GPU_ID=3, 4
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
+Sun 29 Jan 2023 12:33:53 AM EST
+4
+GPU_ID=3, 4
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
+Sun 29 Jan 2023 09:04:05 AM EST
+5
+GPU_ID=0, 2
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
+Sun 29 Jan 2023 09:05:09 AM EST
+6
+GPU_ID=3, 4
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
+Sun 29 Jan 2023 09:06:20 AM EST
+7
+GPU_ID=3, 4
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder cifar10 --mode train --workdir ./results
+---------------------------------------------------------------
