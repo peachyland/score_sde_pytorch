@@ -37,12 +37,23 @@ flags.DEFINE_enum("mode", None, ["train", "eval"], "Running mode: train or eval"
 flags.DEFINE_string("eval_folder", "eval",
                     "The folder name for storing evaluation results")
 flags.DEFINE_string("job_id", "local", "Work directory.")
+flags.DEFINE_bool("hard_examples", False, "Weather to use hard examples")
+flags.DEFINE_bool("easy_examples", False, "Weather to use hard examples")
 flags.mark_flags_as_required(["workdir", "config", "mode"])
 
 def main(argv):
 
   if FLAGS.mode == "train":
     FLAGS.workdir = "{}/{}".format(FLAGS.workdir, FLAGS.job_id)
+    if FLAGS.hard_examples:
+      FLAGS.config.data.unlearnable = True
+      FLAGS.config.data.shuffle = False
+      FLAGS.config.data.idx = True
+      FLAGS.config.training.hard_examples = True
+      FLAGS.config.training.easy_examples = FLAGS.easy_examples
+
+    print(FLAGS.config)
+
     # Create the working directory
     tf.io.gfile.makedirs(FLAGS.workdir)
     # Set logger so that it outputs to both console and file

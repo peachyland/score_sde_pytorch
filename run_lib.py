@@ -122,11 +122,41 @@ def train(config, workdir):
   # In case there are multiple hosts (e.g., TPU pods), only log to host 0
   logging.info("Starting training loop at step %d." % (initial_step,))
 
+  if config.training.hard_examples:
+    bpds = torch.load("/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/results/bpds.pt")
+    sorted_id = np.argsort(bpds)[::-1]
+    sorted_bpds = np.sort(bpds)[::-1]
+
+    import matplotlib.pyplot as plt
+
+    if config.training.easy_examples:
+      hard_ids = sorted_id[45000:]
+    else:
+      hard_ids = sorted_id[:5000]
+
   for step in range(initial_step, num_train_steps + 1):
     # Convert data to JAX arrays and normalize them. Use ._numpy() to avoid copy.
-    batch = torch.from_numpy(next(train_iter)['image']._numpy()).to(config.device).float()
-    batch = batch.permute(0, 3, 1, 2)
-    batch = scaler(batch)
+    if config.training.hard_examples:
+      # batch = torch.from_numpy(next(train_iter)['image']._numpy()).to(config.device).float()
+      # batch = batch.permute(0, 3, 1, 2)
+      # batch = scaler(batch)
+      batch_tuple = next(train_iter)
+      batch_image = torch.from_numpy(batch_tuple[0]['image']._numpy()).to(config.device).float()
+      batch_idx = batch_tuple[1]._numpy()
+      batch_ishard = np.isin(batch_idx, hard_ids)
+      batch = batch_image[batch_ishard]
+      batch_idx = batch_idx[batch_ishard]
+      batch = batch.permute(0, 3, 1, 2)
+      batch = scaler(batch)
+
+      # print(batch_idx.shape)
+      # print(batch.shape)
+      # input("check")
+      
+    else:
+      batch = torch.from_numpy(next(train_iter)['image']._numpy()).to(config.device).float()
+      batch = batch.permute(0, 3, 1, 2)
+      batch = scaler(batch)
     # Execute one training step
     loss = train_step_fn(state, batch)
     if step % config.training.log_freq == 0:
@@ -139,9 +169,20 @@ def train(config, workdir):
 
     # Report the loss on an evaluation dataset periodically
     if step % config.training.eval_freq == 0:
-      eval_batch = torch.from_numpy(next(eval_iter)['image']._numpy()).to(config.device).float()
-      eval_batch = eval_batch.permute(0, 3, 1, 2)
-      eval_batch = scaler(eval_batch)
+      if config.training.hard_examples:
+        batch_tuple = next(eval_iter)
+        eval_batch = torch.from_numpy(batch_tuple[0]['image']._numpy()).to(config.device).float()
+        eval_batch = eval_batch.permute(0, 3, 1, 2)
+        eval_batch = scaler(eval_batch)
+
+      # print(batch_idx.shape)
+      # print(batch.shape)
+      # input("check")
+      
+      else:
+        eval_batch = torch.from_numpy(next(eval_iter)['image']._numpy()).to(config.device).float()
+        eval_batch = eval_batch.permute(0, 3, 1, 2)
+        eval_batch = scaler(eval_batch)
       eval_loss = eval_step_fn(state, eval_batch)
       logging.info("step: %d, eval_loss: %.5e" % (step, eval_loss.item()))
       writer.add_scalar("eval_loss", eval_loss.item(), step)

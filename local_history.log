@@ -94,3 +94,29 @@ python main.py --config ./configs/vp/ddpm/cifar10_bpd.py --eval_folder eval --mo
 python main.py --config ./configs/vp/ddpm/cifar10_bpd.py --eval_folder eval --mode eval --workdir ./results
 python main.py --config ./configs/vp/ddpm/cifar10_bpd.py --eval_folder eval --mode eval --workdir ./results
 python main.py --config ./configs/vp/ddpm/cifar10_bpd.py --eval_folder eval --mode eval --workdir ./results
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples --easy_examples
+python main.py --config ./configs/vp/ddpm/cifar10.py --eval_folder eval --mode train --workdir ./results --hard_examples

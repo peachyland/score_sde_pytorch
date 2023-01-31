@@ -30,7 +30,7 @@ def get_config():
 
   training.batch_size = 512
   training.n_iters = 325001
-  training.snapshot_freq = 1250
+  training.snapshot_freq = 12500
   training.log_freq = 50
   training.eval_freq = 100
 
@@ -44,6 +44,8 @@ def get_config():
   data = config.data
   data.centered = True
   data.unlearnable = False
+  data.shuffle = True
+  data.idx = False
 
   # model
   model = config.model
