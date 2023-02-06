@@ -44,7 +44,7 @@ from utils import save_checkpoint, restore_checkpoint
 FLAGS = flags.FLAGS
 
 
-def train(config, workdir):
+def train(config, workdir, use_pytorch_dataset):
   """Runs the training pipeline.
 
   Args:
@@ -78,10 +78,13 @@ def train(config, workdir):
   initial_step = int(state['step'])
 
   # Build data iterators
-  train_ds, eval_ds, _ = datasets.get_dataset(config,
+  if use_pytorch_dataset:
+    train_iter, eval_iter, _ = datasets.get_pytorch_dataset(config)
+  else:
+    train_ds, eval_ds, _ = datasets.get_dataset(config,
                                               uniform_dequantization=config.data.uniform_dequantization)
-  train_iter = iter(train_ds)  # pytype: disable=wrong-arg-types
-  eval_iter = iter(eval_ds)  # pytype: disable=wrong-arg-types
+    train_iter = iter(train_ds)  # pytype: disable=wrong-arg-types
+    eval_iter = iter(eval_ds)  # pytype: disable=wrong-arg-types
   # Create data normalizer and its inverse
   scaler = datasets.get_data_scaler(config)
   inverse_scaler = datasets.get_data_inverse_scaler(config)
@@ -134,6 +137,7 @@ def train(config, workdir):
     else:
       hard_ids = sorted_id[:5000]
 
+
   for step in range(initial_step, num_train_steps + 1):
     # Convert data to JAX arrays and normalize them. Use ._numpy() to avoid copy.
     if config.training.hard_examples:
@@ -143,6 +147,18 @@ def train(config, workdir):
       batch_tuple = next(train_iter)
       batch_image = torch.from_numpy(batch_tuple[0]['image']._numpy()).to(config.device).float()
       batch_idx = batch_tuple[1]._numpy()
+
+      # from PIL import Image
+      # from torchvision.utils import save_image
+
+      # print(batch_idx)
+      # input("check")
+
+      # for img_idx, img in zip(batch_idx, batch_image):
+      #   save_path = os.path.join("/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/data/cifar_10", "{:05d}.png".format(img_idx))
+      #   img = img.permute(2, 0, 1)
+      #   save_image(img, save_path)
+
       batch_ishard = np.isin(batch_idx, hard_ids)
       batch = batch_image[batch_ishard]
       batch_idx = batch_idx[batch_ishard]
@@ -154,9 +170,14 @@ def train(config, workdir):
       # input("check")
       
     else:
-      batch = torch.from_numpy(next(train_iter)['image']._numpy()).to(config.device).float()
-      batch = batch.permute(0, 3, 1, 2)
-      batch = scaler(batch)
+      if use_pytorch_dataset:
+        batch_tuple = next(train_iter)
+        batch = batch_tuple[0]['image'].to(config.device).float()
+        batch_idx = batch_tuple[1]
+      else:
+        batch = torch.from_numpy(next(train_iter)['image']._numpy()).to(config.device).float()
+        batch = batch.permute(0, 3, 1, 2)
+        batch = scaler(batch)
     # Execute one training step
     loss = train_step_fn(state, batch)
     if step % config.training.log_freq == 0:
@@ -180,9 +201,14 @@ def train(config, workdir):
       # input("check")
       
       else:
-        eval_batch = torch.from_numpy(next(eval_iter)['image']._numpy()).to(config.device).float()
-        eval_batch = eval_batch.permute(0, 3, 1, 2)
-        eval_batch = scaler(eval_batch)
+        if use_pytorch_dataset:
+          eval_batch_tuple = next(train_iter)
+          eval_batch = eval_batch_tuple[0]['image'].to(config.device).float()
+          eval_batch_idx = eval_batch_tuple[1]
+        else:
+          eval_batch = torch.from_numpy(next(eval_iter)['image']._numpy()).to(config.device).float()
+          eval_batch = eval_batch.permute(0, 3, 1, 2)
+          eval_batch = scaler(eval_batch)
       eval_loss = eval_step_fn(state, eval_batch)
       logging.info("step: %d, eval_loss: %.5e" % (step, eval_loss.item()))
       writer.add_scalar("eval_loss", eval_loss.item(), step)
@@ -215,6 +241,7 @@ def train(config, workdir):
 
 def evaluate(config,
              workdir,
+             use_pytorch_dataset,
              eval_folder="eval"):
   """Evaluate trained models.
 
@@ -272,7 +299,10 @@ def evaluate(config,
 
 
   # Create data loaders for likelihood evaluation. Only evaluate on uniformly dequantized data
-  train_ds_bpd, eval_ds_bpd, _ = datasets.get_dataset(config,
+  if use_pytorch_dataset:
+    train_ds_bpd, eval_ds_bpd, _ = datasets.get_pytorch_dataset(config, evaluation=True)
+  else:
+    train_ds_bpd, eval_ds_bpd, _ = datasets.get_dataset(config,
                                                       uniform_dequantization=True, evaluation=True)
   if config.eval.bpd_dataset.lower() == 'train':
     ds_bpd = train_ds_bpd
@@ -280,7 +310,7 @@ def evaluate(config,
   elif config.eval.bpd_dataset.lower() == 'test':
     # Go over the dataset 5 times when computing likelihood on the test dataset
     ds_bpd = eval_ds_bpd
-    bpd_num_repeats = 5
+    bpd_num_repeats = config.eval.bpd_num_repeats
   else:
     raise ValueError(f"No bpd dataset {config.eval.bpd_dataset} recognized.")
 
@@ -355,16 +385,25 @@ def evaluate(config,
           # print(batch.keys())
           # input("check")
 
-          # if batch_id >= 2:
-          #   break
+          if batch_id >= 2:
+            break
 
-          print(batch_id)
-          print(batch[0]['image'].shape)
+          # print(batch_id)
+          # print(batch[0]['image'].shape)
 
-          eval_batch = torch.from_numpy(batch[0]['image']._numpy()).to(config.device).float()
-          sample_idx = torch.from_numpy(batch[1]._numpy()).to(config.device)
-          eval_batch = eval_batch.permute(0, 3, 1, 2)
-          eval_batch = scaler(eval_batch)
+          if use_pytorch_dataset:
+            eval_batch = batch[0]['image'].to(config.device).float()
+            sample_idx = batch[1].to(config.device)
+            # print(torch.min(eval_batch))
+            # print(torch.max(eval_batch))
+            # input("check")
+            # eval_batch = eval_batch.permute(0, 3, 1, 2)
+            # eval_batch = scaler(eval_batch)
+          else:
+            eval_batch = torch.from_numpy(batch[0]['image']._numpy()).to(config.device).float()
+            sample_idx = torch.from_numpy(batch[1]._numpy()).to(config.device)
+            eval_batch = eval_batch.permute(0, 3, 1, 2)
+            eval_batch = scaler(eval_batch)
           bpd = likelihood_fn(score_model, eval_batch)[0]
           bpd = bpd.detach().cpu().numpy().reshape(-1)
           bpds.extend(bpd)
@@ -388,7 +427,7 @@ def evaluate(config,
         sorted_id = np.argsort(bpds)
         good_sample_id = sorted_id[:256]
         bad_sample_id = sorted_id[::-1][:256]
-        # print(sorted_id)
+        print(sorted_id)
         # print(0 in sorted_id)
         # print(100 in sorted_id)
         # input("check")
@@ -405,7 +444,10 @@ def evaluate(config,
           # nrow = int(np.sqrt(sample.shape[0]))
           # image_grid = make_grid(sample, nrow, padding=2)
           # batch_sample = np.clip(batch[0]['image']._numpy() * 255, 0, 255).astype(np.uint8)
-          batch_sample = batch[0]['image']._numpy()
+          if use_pytorch_dataset:
+            batch_sample = batch[0]['image'].cpu().numpy()
+          else:
+            batch_sample = batch[0]['image']._numpy()
           for i, sample_id in enumerate(batch[1]):
             if sample_id in good_sample_id:
               good_sample_list.append(batch_sample[i])

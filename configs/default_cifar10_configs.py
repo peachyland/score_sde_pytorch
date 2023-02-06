@@ -37,7 +37,8 @@ def get_default_configs():
   evaluate.num_samples = 50000
   evaluate.enable_loss = False
   evaluate.enable_bpd = True
-  evaluate.bpd_dataset = 'train'
+  evaluate.bpd_dataset = 'test'
+  evaluate.bpd_num_repeats = 1
 
   # data
   config.data = data = ml_collections.ConfigDict()
@@ -47,6 +48,9 @@ def get_default_configs():
   data.centered = False
   data.uniform_dequantization = False
   data.num_channels = 3
+
+  data.pytorch_dataset_train_dir = '/localscratch/renjie/cifar_train_bird'
+  data.pytorch_dataset_eval_dir = '/localscratch/renjie/cifar_train_bird'
 
   # model
   config.model = model = ml_collections.ConfigDict()

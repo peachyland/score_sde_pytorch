@@ -39,6 +39,7 @@ flags.DEFINE_string("eval_folder", "eval",
 flags.DEFINE_string("job_id", "local", "Work directory.")
 flags.DEFINE_bool("hard_examples", False, "Weather to use hard examples")
 flags.DEFINE_bool("easy_examples", False, "Weather to use hard examples")
+flags.DEFINE_bool("pytorch_dataset", False, "Weather to use hard examples")
 flags.mark_flags_as_required(["workdir", "config", "mode"])
 
 def main(argv):
@@ -66,7 +67,7 @@ def main(argv):
     logger.addHandler(handler)
     logger.setLevel('INFO')
     # Run the training pipeline
-    run_lib.train(FLAGS.config, FLAGS.workdir)
+    run_lib.train(FLAGS.config, FLAGS.workdir, FLAGS.pytorch_dataset, )
   elif FLAGS.mode == "eval":
     # Run the evaluation pipeline
     run_lib.evaluate(FLAGS.config, FLAGS.workdir, FLAGS.eval_folder)
