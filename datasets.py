@@ -218,6 +218,7 @@ def get_pytorch_dataset(config, evaluation=False):
   """
   # Compute batch size for this worker.
   batch_size = config.training.batch_size if not evaluation else config.eval.batch_size
+
   if batch_size % jax.device_count() != 0:
     raise ValueError(f'Batch sizes ({batch_size} must be divided by'
                      f'the number of devices ({jax.device_count()})')

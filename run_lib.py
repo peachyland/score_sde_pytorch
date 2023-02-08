@@ -300,6 +300,7 @@ def evaluate(config,
 
   # Create data loaders for likelihood evaluation. Only evaluate on uniformly dequantized data
   if use_pytorch_dataset:
+    print("pass here")
     train_ds_bpd, eval_ds_bpd, _ = datasets.get_pytorch_dataset(config, evaluation=True)
   else:
     train_ds_bpd, eval_ds_bpd, _ = datasets.get_dataset(config,
@@ -379,55 +380,58 @@ def evaluate(config,
     if config.eval.enable_bpd:
       bpds = []
       for repeat in range(bpd_num_repeats):
-        bpd_iter = iter(ds_bpd)  # pytype: disable=wrong-arg-types
-        for batch_id in range(len(ds_bpd)):
-          batch = next(bpd_iter)
-          # print(batch.keys())
-          # input("check")
-
-          if batch_id >= 2:
-            break
-
-          # print(batch_id)
-          # print(batch[0]['image'].shape)
-
-          if use_pytorch_dataset:
-            eval_batch = batch[0]['image'].to(config.device).float()
-            sample_idx = batch[1].to(config.device)
-            # print(torch.min(eval_batch))
-            # print(torch.max(eval_batch))
+        
+        if False:
+          bpd_iter = iter(ds_bpd)  # pytype: disable=wrong-arg-types
+          for batch_id in range(len(ds_bpd)):
+            batch = next(bpd_iter)
+            # print(batch.keys())
             # input("check")
-            # eval_batch = eval_batch.permute(0, 3, 1, 2)
-            # eval_batch = scaler(eval_batch)
-          else:
-            eval_batch = torch.from_numpy(batch[0]['image']._numpy()).to(config.device).float()
-            sample_idx = torch.from_numpy(batch[1]._numpy()).to(config.device)
-            eval_batch = eval_batch.permute(0, 3, 1, 2)
-            eval_batch = scaler(eval_batch)
-          bpd = likelihood_fn(score_model, eval_batch)[0]
-          bpd = bpd.detach().cpu().numpy().reshape(-1)
-          bpds.extend(bpd)
-          logging.info(
-            "ckpt: %d, repeat: %d, batch: %d, mean bpd: %6f" % (ckpt, repeat, batch_id, np.mean(np.asarray(bpds))))
-          bpd_round_id = batch_id + len(ds_bpd) * repeat
-          # Save bits/dim to disk or Google Cloud Storage
-          with tf.io.gfile.GFile(os.path.join(eval_dir,
-                                              f"{config.eval.bpd_dataset}_ckpt_{ckpt}_bpd_{bpd_round_id}.npz"),
-                                 "wb") as fout:
-            io_buffer = io.BytesIO()
-            np.savez_compressed(io_buffer, bpd)
-            fout.write(io_buffer.getvalue())
+
+            # if batch_id >= 1:
+            #   break
+
+            # print(batch_id)
+            # print(batch[0]['image'].shape)
+
+            if use_pytorch_dataset:
+              eval_batch = batch[0]['image'].to(config.device).float()
+              sample_idx = batch[1].to(config.device)
+              # print(torch.min(eval_batch))
+              # print(torch.max(eval_batch))
+              # input("check")
+              # eval_batch = eval_batch.permute(0, 3, 1, 2)
+              # eval_batch = scaler(eval_batch)
+            else:
+              eval_batch = torch.from_numpy(batch[0]['image']._numpy()).to(config.device).float()
+              sample_idx = torch.from_numpy(batch[1]._numpy()).to(config.device)
+              eval_batch = eval_batch.permute(0, 3, 1, 2)
+              eval_batch = scaler(eval_batch)
+            bpd = likelihood_fn(score_model, eval_batch)[0]
+            bpd = bpd.detach().cpu().numpy().reshape(-1)
+            bpds.extend(bpd)
+            logging.info(
+              "ckpt: %d, repeat: %d, batch: %d, mean bpd: %6f" % (ckpt, repeat, batch_id, np.mean(np.asarray(bpds))))
+            bpd_round_id = batch_id + len(ds_bpd) * repeat
+            # Save bits/dim to disk or Google Cloud Storage
+            with tf.io.gfile.GFile(os.path.join(eval_dir,
+                                                f"{config.eval.bpd_dataset}_ckpt_{ckpt}_bpd_{bpd_round_id}.npz"),
+                                  "wb") as fout:
+              io_buffer = io.BytesIO()
+              np.savez_compressed(io_buffer, bpd)
+              fout.write(io_buffer.getvalue())
 
         # bpds = np.concatenate(bpds, axis=0)
-        bpds = np.array(bpds)
+        # bpds = np.array(bpds)
         # print(bpds)
         # print(bpds)
-        torch.save(bpds, "/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/results/bpds.pt")
+        # torch.save(bpds, "/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/results/bpds.pt")
+        bpds = torch.load("/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/results/bpds.pt")
         # input("save done")
         sorted_id = np.argsort(bpds)
         good_sample_id = sorted_id[:256]
         bad_sample_id = sorted_id[::-1][:256]
-        print(sorted_id)
+        # print(sorted_id)
         # print(0 in sorted_id)
         # print(100 in sorted_id)
         # input("check")
@@ -436,8 +440,6 @@ def evaluate(config,
         bad_sample_list = []
 
         for batch in ds_bpd:
-          # print(batch[1])
-          # input("check")
 
           # this_sample_dir = os.path.join(sample_dir, "iter_{}".format(step))
           # tf.io.gfile.makedirs(this_sample_dir)
@@ -447,15 +449,23 @@ def evaluate(config,
           if use_pytorch_dataset:
             batch_sample = batch[0]['image'].cpu().numpy()
           else:
-            batch_sample = batch[0]['image']._numpy()
+            batch_sample = batch[0]['image']._numpy().transpose(0, 3, 1, 2)
           for i, sample_id in enumerate(batch[1]):
-            if sample_id in good_sample_id:
-              good_sample_list.append(batch_sample[i])
-            elif sample_id in bad_sample_id:
-              bad_sample_list.append(batch_sample[i])
+            # print(i, sample_id.cpu().numpy()[0])
+            if use_pytorch_dataset:
+              if sample_id.item() in good_sample_id:
+                good_sample_list.append(batch_sample[i])
+              elif sample_id.item() in bad_sample_id:
+                bad_sample_list.append(batch_sample[i])
 
-        good_samples = np.stack(good_sample_list, axis=0).transpose(0, 3, 1, 2)
-        bad_samples = np.stack(bad_sample_list, axis=0).transpose(0, 3, 1, 2)
+            else:
+              if sample_id in good_sample_id:
+                good_sample_list.append(batch_sample[i])
+              elif sample_id in bad_sample_id:
+                bad_sample_list.append(batch_sample[i])
+
+        good_samples = np.stack(good_sample_list, axis=0)#.transpose(0, 3, 1, 2)
+        bad_samples = np.stack(bad_sample_list, axis=0)#.transpose(0, 3, 1, 2)
 
         # good_samples = np.clip(good_samples * 255, 0, 255).astype(np.uint8)
         # bad_samples = np.clip(bad_samples * 255, 0, 255).astype(np.uint8)
@@ -463,6 +473,7 @@ def evaluate(config,
         tf.io.gfile.makedirs(eval_dir)
         
         good_sample_dir = os.path.join(eval_dir, f"{config.eval.bpd_dataset}_ckpt_{ckpt}_bpd_good.png")
+        print(good_sample_dir)
         nrow = int(np.sqrt(good_samples.shape[0]))
         good_samples = torch.tensor(good_samples)
         image_grid = make_grid(good_samples, nrow, padding=2)
@@ -551,6 +562,153 @@ def evaluate(config,
 
       logging.info(
         "ckpt-%d --- inception_score: %.6e, FID: %.6e, KID: %.6e" % (
+          ckpt, inception_score, fid, kid))
+
+      with tf.io.gfile.GFile(os.path.join(eval_dir, f"report_{ckpt}.npz"),
+                             "wb") as f:
+        io_buffer = io.BytesIO()
+        np.savez_compressed(io_buffer, IS=inception_score, fid=fid, kid=kid)
+        f.write(io_buffer.getvalue())
+
+def evaluate_samples(config,
+             workdir,
+             eval_folder="eval",
+             test_sample_input_path=None):
+
+  # input("check here")
+  try:
+    samples = np.load(test_sample_input_path)['arr_0']
+  except:
+    samples = np.load(test_sample_input_path)
+  
+  # Create directory to eval_folder
+  eval_dir = os.path.join(workdir, eval_folder)
+  tf.io.gfile.makedirs(eval_dir)
+
+  # # Initialize model
+  # score_model = mutils.create_model(config)
+  # optimizer = losses.get_optimizer(config, score_model.parameters())
+  # ema = ExponentialMovingAverage(score_model.parameters(), decay=config.model.ema_rate)
+  # state = dict(optimizer=optimizer, model=score_model, ema=ema, step=0)
+
+  checkpoint_dir = os.path.join(workdir, "checkpoints")
+
+  # Use inceptionV3 for images with resolution higher than 256.
+  inceptionv3 = config.data.image_size >= 256
+  inception_model = evaluation.get_inception_model(inceptionv3=inceptionv3)
+
+  begin_ckpt = config.eval.begin_ckpt
+  logging.info("begin checkpoint: %d" % (begin_ckpt,))
+  for ckpt in range(begin_ckpt, config.eval.end_ckpt + 1):
+    # Wait if the target checkpoint doesn't exist yet
+    waiting_message_printed = False
+    ckpt_filename = os.path.join(checkpoint_dir, "checkpoint_{}.pth".format(ckpt))
+    while not tf.io.gfile.exists(ckpt_filename):
+      if not waiting_message_printed:
+        logging.warning("Waiting for the arrival of checkpoint_%d" % (ckpt,))
+        waiting_message_printed = False
+      time.sleep(1)
+
+    # ema.copy_to(score_model.parameters())
+
+    # Generate samples and compute IS/FID/KID when enabled
+    if config.eval.enable_sampling:
+      # num_sampling_rounds = config.eval.num_samples // config.eval.batch_size + 1
+      # for r in range(num_sampling_rounds):
+      #   logging.info("sampling -- ckpt: %d, round: %d" % (ckpt, r))
+
+      this_sample_dir = os.path.join(eval_dir, f"ckpt_{ckpt}")
+      tf.io.gfile.makedirs(this_sample_dir)
+      # samples = np.clip(samples.permute(0, 2, 3, 1).cpu().numpy() * 255., 0, 255).astype(np.uint8)
+      # samples = samples.reshape((-1, config.data.image_size, config.data.image_size, config.data.num_channels))
+      # # Write samples to disk or Google Cloud Storage
+      # with tf.io.gfile.GFile(
+      #     os.path.join(this_sample_dir, f"samples_{r}.npz"), "wb") as fout:
+      #   io_buffer = io.BytesIO()
+      #   np.savez_compressed(io_buffer, samples=samples)
+      #   fout.write(io_buffer.getvalue())
+
+      # Force garbage collection before calling TensorFlow code for Inception network
+      gc.collect()
+      latents = evaluation.run_inception_distributed(samples, inception_model,
+                                                      inceptionv3=inceptionv3)
+      # Force garbage collection again before returning to JAX code
+      gc.collect()
+      # Save latent represents of the Inception network to disk or Google Cloud Storage
+      with tf.io.gfile.GFile(
+          os.path.join(this_sample_dir, f"statistics_test.npz"), "wb") as fout:
+        io_buffer = io.BytesIO()
+        np.savez_compressed(
+          io_buffer, pool_3=latents["pool_3"], logits=latents["logits"])
+        fout.write(io_buffer.getvalue())
+
+      # Compute inception scores, FIDs and KIDs.
+      # Load all statistics that have been previously computed and saved for each host
+      all_logits = []
+      all_pools = []
+      this_sample_dir = os.path.join(eval_dir, f"ckpt_{ckpt}")
+      stats = tf.io.gfile.glob(os.path.join(this_sample_dir, "statistics_*.npz"))
+      for stat_file in stats:
+        with tf.io.gfile.GFile(stat_file, "rb") as fin:
+          stat = np.load(fin)
+          if not inceptionv3:
+            all_logits.append(stat["logits"])
+          all_pools.append(stat["pool_3"])
+
+      # if not inceptionv3:
+      #   all_logits = np.concatenate(all_logits, axis=0)[:config.eval.num_samples]
+      # all_pools = np.concatenate(all_pools, axis=0)[:config.eval.num_samples]
+
+      if not inceptionv3:
+        all_logits = np.concatenate(all_logits, axis=0)
+      all_pools = np.concatenate(all_pools, axis=0)
+
+      # Load pre-computed dataset statistics.
+      data_stats = evaluation.load_dataset_stats(config)
+      data_pools = data_stats["pool_3"]
+
+      # print(type(data_pools))
+      # print(type(all_logits))
+      # print(data_pools.shape)
+      # print(all_logits.shape)
+
+      # data_pools = np.load("/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/assets/stats/cifar10_bird.npy")[:1000]
+
+      # print(type(data_pools))
+      # print(type(all_pools))
+      # print(data_pools.shape)
+      # print(all_pools.shape)
+
+      # pad1 = np.zeros((5000, 1040))
+      # data_pools = np.concatenate([data_pools, pad1], axis=1)
+
+      # pad2 = np.zeros((1000, 1040))
+      # all_pools = np.concatenate([all_pools, pad2], axis=1)
+
+      # print(type(data_pools))
+      # print(type(all_pools))
+      # print(data_pools.shape)
+      # print(all_pools.shape)
+
+      # np.save("/egr/research-dselab/renjie3/renjie/diffusion/score_sde_pytorch/assets/stats/cifar10_bird.npy", all_pools)
+      # input("check")
+
+      # Compute FID/KID/IS on all samples together.
+      if not inceptionv3:
+        inception_score = tfgan.eval.classifier_score_from_logits(all_logits)
+      else:
+        inception_score = -1
+
+      fid = tfgan.eval.frechet_classifier_distance_from_activations(data_pools, all_pools)
+      # Hack to get tfgan KID work for eager execution.
+      tf_data_pools = tf.convert_to_tensor(data_pools)
+      tf_all_pools = tf.convert_to_tensor(all_pools)
+      kid = tfgan.eval.kernel_classifier_distance_from_activations(
+        tf_data_pools, tf_all_pools).numpy()
+      del tf_data_pools, tf_all_pools
+
+      logging.info(
+        "ckpt-%d --- inception_score: %.6f, FID: %.6f, KID: %.6f" % (
           ckpt, inception_score, fid, kid))
 
       with tf.io.gfile.GFile(os.path.join(eval_dir, f"report_{ckpt}.npz"),
