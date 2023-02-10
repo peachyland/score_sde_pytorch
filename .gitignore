@@ -29,3 +29,5 @@ logfile/
 data/
 
 assets/stats
+
+local_history.log
